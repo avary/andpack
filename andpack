@@ -1,0 +1,74 @@
+#!/bin/sh
+
+# Variables
+pkn=$1							# Modes can be d or b
+class=$2						# Application class
+apk=$class.apk					# APK filename
+pass=mypass						# Your keystore password
+kalias=myalias					# Your keystore alias
+keyst=my-release-key.keystore	# Your keystore location
+
+# Main Program
+if test $pkn = d
+then
+    echo "You choosed to decompile $class"
+    echo "* You will need root privileges *"
+
+    if sudo apktool $pkn $apk
+    then
+        echo "$apk sucessfully decompiled"
+    else
+        echo "ERROR: Failed to decompile $apk"
+        exit -1
+    fi
+else
+    if test $pkn = b
+    then
+        echo "You choosed to compile $class"
+
+        echo "Renaming the unmodifyed APK to $class.unmodifyed.apk"
+        mv $apk $class.unmodifyed.apk
+        
+        echo "* You will need root privileges *"
+
+        if sudo apktool $pkn $class $apk
+        then
+            echo "$apk sucessfully built"
+            echo "Setting 777 permission to $apk"
+            sudo chmod 777 $apk
+
+            echo "Signing $apk"
+            if jarsigner -verbose -keystore $keyst -storepass $pass $apk $kalias
+            then
+                echo "$apk signed sucessfully"
+            else
+                echo "ERROR: Failed to sign $apk. Please recheck the variables"
+                exit -1
+            fi
+
+            echo "Uninstalling the exixting application from your phone..."
+            if adb uninstall $class
+            then
+                echo "The application have been found and nuked"
+            else
+                echo "ERROR: Could not uninstall or could not locate the application"
+                exit -1
+            fi
+
+            echo "Installing the new application"
+            if adb install $class.apk
+            then
+                echo "All Done"
+            else
+                echo "ERROR: Could not install the application"
+                exit -1
+            fi
+        else
+            echo "Something went wrong"
+            exit -1
+        fi
+    else
+        echo "Something went wrong"
+        exit -1
+    fi
+fi
