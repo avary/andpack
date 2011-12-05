@@ -6,6 +6,7 @@ A script to automate the Android reverse engineering. With one single command yo
 
  * apktool
  * adb (Android SDK)
+ * Bash (Shell Script)
 
 ### Usage
 
